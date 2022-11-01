@@ -34,12 +34,12 @@ http://www.imbs-luebeck.de
 #include "utility.h"
 #include "Data.h"
 
-namespace rangerts {
+namespace rangertsModified {
 
 class DataRcpp: public Data {
 public:
   DataRcpp() = default;
-  DataRcpp(Rcpp::NumericMatrix& x, Rcpp::NumericMatrix& y, std::vector<std::string> variable_names, size_t num_rows, size_t num_cols) {
+  DataRcpp(Rcpp::NumericMatrix x, Rcpp::NumericMatrix y, std::vector<std::string> variable_names, size_t num_rows, size_t num_cols) {
       this->x = x;
       this->y = y;
       this->variable_names = variable_names;
@@ -48,12 +48,17 @@ public:
       this->num_cols_no_snp = num_cols;
     }
 
-  DataRcpp(const DataRcpp&) = delete;
-  DataRcpp& operator=(const DataRcpp&) = delete;
+  //DataRcpp(const DataRcpp&) = delete;
+  
+  //DataRcpp& operator=(const DataRcpp&) = delete;
 
   virtual ~DataRcpp() override = default;
+  
+  virtual std::unique_ptr<Data> clone() const override{
+    return make_unique<DataRcpp>(*this);
+  }
 
-  double get_x(size_t row, size_t col) const override {
+  double get_x(size_t row, size_t col) const override{
     // Use permuted data for corrected impurity importance
     size_t col_permuted = col;
     if (col >= num_cols) {
@@ -67,17 +72,38 @@ public:
       return getSnp(row, col, col_permuted);
     }
   }
-
+ 
   double get_y(size_t row, size_t col) const override {
     return y(row, col);
   }
+  
+  void set_Y(Rcpp::NumericMatrix Y){
+    this->y = Y;
+  }
+  
+  void set_X(Rcpp::NumericMatrix X){
+    this->x = X;
+  }
+  
+  void setNumCols(size_t num_cols){
+    this->num_cols = num_cols;
+    this->num_cols_no_snp = num_cols;
+  }
+  
+  void setNumRows(size_t num_rows){
+    this->num_rows = num_rows;
+  }
+  
+  void setVarNames( std::vector<std::string> variable_names){
+    this->variable_names = variable_names;
+  }
 
   // #nocov start
-  void reserveMemory(size_t y_cols) override {
+  void reserveMemory(size_t y_cols) override{
     // Not needed
   }
 
-  void set_x(size_t col, size_t row, double value, bool& error) override {
+  void set_x(size_t col, size_t row, double value, bool& error)  override{
     x(row, col) = value;
   }
 
@@ -91,6 +117,6 @@ private:
   Rcpp::NumericMatrix y;
 };
 
-} // namespace rangerts
+} // namespace rangerts_modified
 
 #endif /* DATARCPP_H_ */

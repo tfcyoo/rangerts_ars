@@ -20,7 +20,7 @@
 #include "Forest.h"
 #include "TreeProbability.h"
 
-namespace rangerts {
+namespace rangertsModified {
 
 class ForestProbability: public Forest {
 public:
@@ -71,6 +71,6 @@ private:
   size_t getTreePredictionTerminalNodeID(size_t tree_idx, size_t sample_idx) const;
 };
 
-} // namespace rangerts
+} // namespace rangerts_modified
 
 #endif /* FORESTPROBABILITY_H_ */

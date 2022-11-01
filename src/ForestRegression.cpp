@@ -18,7 +18,7 @@
 #include "TreeRegression.h"
 #include "Data.h"
 
-namespace rangerts {
+namespace rangertsModified {
 
 void ForestRegression::loadForest(size_t num_trees,
     std::vector<std::vector<std::vector<size_t>> >& forest_child_nodeIDs,
@@ -63,8 +63,8 @@ void ForestRegression::initInternal() {
   }
 
   // Sort data if memory saving mode
-  if (!memory_saving_splitting) {
-    data->sort();
+  if (!memory_saving_splitting && bootstrap_ts != AR_SIEVE) {
+      data->sort();
   }
 }
 
@@ -99,9 +99,21 @@ void ForestRegression::predictInternal(size_t sample_idx) {
   } else {
     // Mean over trees
     double prediction_sum = 0;
+    std::vector<double> probs{0.025, 0.975};
+    std::vector<double> tree_value;
+    std::vector<double> intervals;
+    
     for (size_t tree_idx = 0; tree_idx < num_trees; ++tree_idx) {
-      prediction_sum += getTreePrediction(tree_idx, sample_idx);
+      double value = getTreePrediction(tree_idx, sample_idx);
+      prediction_sum += value; //getTreePrediction(tree_idx, sample_idx);
+      tree_value.push_back(value);
     }
+    sort(tree_value.begin(), tree_value.end());
+    
+    for(size_t i = 0; i < probs.size(); i++){
+      intervals.push_back(tree_value[ceil(probs[i]*num_trees)-1]);
+    }
+    setPredictionIntervals(intervals);
     predictions[0][0][sample_idx] = prediction_sum / num_trees;
   }
 }
@@ -109,35 +121,58 @@ void ForestRegression::predictInternal(size_t sample_idx) {
 void ForestRegression::computePredictionErrorInternal() {
 
 // For each sample sum over trees where sample is OOB
-  std::vector<size_t> samples_oob_count;
+  
   predictions = std::vector<std::vector<std::vector<double>>>(1,
       std::vector<std::vector<double>>(1, std::vector<double>(num_samples, 0)));
-  samples_oob_count.resize(num_samples, 0);
-  for (size_t tree_idx = 0; tree_idx < num_trees; ++tree_idx) {
-    for (size_t sample_idx = 0; sample_idx < trees[tree_idx]->getNumSamplesOob(); ++sample_idx) {
-      size_t sampleID = trees[tree_idx]->getOobSampleIDs()[sample_idx];
-      double value = getTreePrediction(tree_idx, sample_idx);
-
-      predictions[0][0][sampleID] += value;
-      ++samples_oob_count[sampleID];
-    }
-  }
-
-// MSE with predictions and true data
+  
   size_t num_predictions = 0;
   overall_prediction_error = 0;
-  for (size_t i = 0; i < predictions[0][0].size(); ++i) {
-    if (samples_oob_count[i] > 0) {
-      ++num_predictions;
-      predictions[0][0][i] /= (double) samples_oob_count[i];
-      double predicted_value = predictions[0][0][i];
-      double real_value = data->get_y(i, 0);
-      overall_prediction_error += (predicted_value - real_value) * (predicted_value - real_value);
-    } else {
-      predictions[0][0][i] = NAN;
+  
+  //
+  if(bootstrap_ts != AR_SIEVE){
+    std::vector<size_t> samples_oob_count;
+    samples_oob_count.resize(num_samples, 0);
+    
+    for (size_t tree_idx = 0; tree_idx < num_trees; ++tree_idx) {
+      for (size_t sample_idx = 0; sample_idx < trees[tree_idx]->getNumSamplesOob(); ++sample_idx) {
+        size_t sampleID = trees[tree_idx]->getOobSampleIDs()[sample_idx];
+        double value = getTreePrediction(tree_idx, sample_idx);
+        //tree_value.push_back(value);
+        predictions[0][0][sampleID] += value;
+        ++samples_oob_count[sampleID];
+      }
+    }
+    
+    // MSE with predictions and true data
+    for (size_t i = 0; i < predictions[0][0].size(); ++i) {
+      if (samples_oob_count[i] > 0) {
+        ++num_predictions;
+        predictions[0][0][i] /= (double) samples_oob_count[i];
+        double predicted_value = predictions[0][0][i];
+        double real_value = data->get_y(i, 0);
+        overall_prediction_error += (predicted_value - real_value) * (predicted_value - real_value);
+      } else {
+        predictions[0][0][i] = NAN;
+      }
+    }
+  }else{
+    for (size_t tree_idx = 0; tree_idx < num_trees; ++tree_idx) {
+      for (size_t sample_idx = 0; sample_idx < num_samples; ++sample_idx) {
+        double value = getTreePrediction(tree_idx, sample_idx);
+        predictions[0][0][sample_idx] += value;
+        //tree_value.push_back(value);
+      }
+    }
+    
+    // MSE with predictions and true data
+    for (size_t i = 0; i < predictions[0][0].size(); ++i) {
+        ++num_predictions;
+        predictions[0][0][i] /= (double) num_samples;
+        double predicted_value = predictions[0][0][i];
+        double real_value = data->get_y(i, 0);
+        overall_prediction_error += (predicted_value - real_value) * (predicted_value - real_value);
     }
   }
-
   overall_prediction_error /= (double) num_predictions;
 }
 
@@ -257,4 +292,4 @@ size_t ForestRegression::getTreePredictionTerminalNodeID(size_t tree_idx, size_t
 
 // #nocov end
 
-}// namespace rangerts
+}// namespace rangerts_modified

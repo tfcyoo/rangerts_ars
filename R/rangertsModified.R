@@ -212,7 +212,7 @@ rangerts <- function(formula = NULL, data = NULL, num.trees = 500, mtry = NULL,
                    dependent.variable.name = NULL, status.variable.name = NULL,
                    classification = NULL, x = NULL, y = NULL,
                    bootstrap.ts = NULL, by.end = TRUE,
-                   block.size = 10, period = 1) {
+                   block.size = 10, period = 1, ar_errors = NULL, ar_coefs = NULL) {
 
   ## By default not in GWAS mode
   snp.data <- as.matrix(0)
@@ -662,12 +662,25 @@ rangerts <- function(formula = NULL, data = NULL, num.trees = 500, mtry = NULL,
       bootstrap.ts.num <- 5
     } else if (bootstrap.ts == "seasonal") {
       bootstrap.ts.num <- 6
-    } else {
+    } else if (bootstrap.ts == "ar.sieve"){
+      bootstrap.ts.num <- 7
+    } 
+    else {
       stop("Error: Unknown type of time series bootstrapping.")
     }
   } else {
     bootstrap.ts.num <- 1
   }
+  
+  
+  if(bootstrap.ts.num == 7 && (is.null(ar_errors) || is.null(ar_coefs))){
+    stop("Error: Bootstrap method AR_SIEVE but fitted errors or coeficients are null.")
+  }
+  if(bootstrap.ts.num != 7){
+    ar_errors = c(0)
+    ar_coefs = c(0)
+  }
+  
 
   ## Splitting rule
   if (is.null(splitrule)) {
@@ -850,7 +863,7 @@ rangerts <- function(formula = NULL, data = NULL, num.trees = 500, mtry = NULL,
       stop("Error: Competing risks not supported yet. Use status=1 for events and status=0 for censoring.")
     }
   }
-
+  
   ## Call rangerts
   result <- rangertsCpp(treetype, x, y.mat, independent.variable.names, mtry,
                       num.trees, verbose, seed, num.threads, write.forest, importance.mode,
@@ -863,7 +876,7 @@ rangerts <- function(formula = NULL, data = NULL, num.trees = 500, mtry = NULL,
                       num.random.splits, sparse.x, use.sparse.data, order.snps, oob.error, max.depth,
                       inbag, use.inbag,
                       regularization.factor, use.regularization.factor, regularization.usedepth,
-                      bootstrap.ts.num, by.end, block.size, period)
+                      bootstrap.ts.num, by.end, block.size, period, ar_errors, ar_coefs)
 
   if (length(result) == 0) {
     stop("User interrupt or internal error.")

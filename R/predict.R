@@ -234,6 +234,8 @@ predict.rangerts.forest <- function(object, data, predict.all = FALSE,
   by.end <- TRUE
   block.size <- 10
   period <- 1
+  ar_errors <- c(0)
+  ar_coefs <- c(0)
 
   ## Use sparse matrix
   if (inherits(x, "dgCMatrix")) {
@@ -258,7 +260,7 @@ predict.rangerts.forest <- function(object, data, predict.all = FALSE,
                       prediction.type, num.random.splits, sparse.x, use.sparse.data,
                       order.snps, oob.error, max.depth, inbag, use.inbag,
                       regularization.factor, use.regularization.factor, regularization.usedepth,
-                      bootstrap.ts.num, by.end, block.size, period)
+                      bootstrap.ts.num, by.end, block.size, period, ar_errors, ar_coefs)
 
   if (length(result) == 0) {
     stop("User interrupt or internal error.")

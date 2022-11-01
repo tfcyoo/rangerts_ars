@@ -25,8 +25,10 @@
 #include "DataChar.h"
 #include "DataDouble.h"
 #include "DataFloat.h"
+#include "DataRcpp.h"
 
-namespace rangerts {
+
+namespace rangertsModified {
 
 Forest::Forest() :
     verbose_out(0), num_trees(DEFAULT_NUM_TREE), mtry(0), min_node_size(0), num_independent_variables(0), seed(0), num_samples(
@@ -49,7 +51,8 @@ void Forest::initCpp(std::string dependent_variable_name, MemoryMode memory_mode
     std::string case_weights_file, bool predict_all, double sample_fraction, double alpha, double minprop, bool holdout,
     PredictionType prediction_type, uint num_random_splits, uint max_depth, const std::vector<double>& regularization_factor,
     bool regularization_usedepth, BootstrapTS bootstrap_ts, bool by_end,
-    uint block_size, uint period) {
+    uint block_size, uint period, std::vector<double>& errors,
+    std::vector<double>& coefs, Rcpp::NumericMatrix input_x, Rcpp::NumericMatrix input_y) {
 
   this->verbose_out = verbose_out;
 
@@ -85,7 +88,8 @@ void Forest::initCpp(std::string dependent_variable_name, MemoryMode memory_mode
   init(memory_mode, loadDataFromFile(input_file), mtry, output_prefix, num_trees, seed, num_threads, importance_mode,
       min_node_size, prediction_mode, sample_with_replacement, unordered_variable_names, memory_saving_splitting,
       splitrule, predict_all, sample_fraction_vector, alpha, minprop, holdout, prediction_type, num_random_splits,
-      false, max_depth, regularization_factor, regularization_usedepth, bootstrap_ts, by_end, block_size, period);
+      false, max_depth, regularization_factor, regularization_usedepth, bootstrap_ts, by_end, block_size, period,
+      errors, coefs, input_x, input_y);
 
   if (prediction_mode) {
     loadFromFile(load_forest_filename);
@@ -144,7 +148,8 @@ void Forest::initR(std::unique_ptr<Data> input_data, uint mtry, uint num_trees, 
     std::vector<std::vector<size_t>>& manual_inbag, bool predict_all, bool keep_inbag,
     std::vector<double>& sample_fraction, double alpha, double minprop, bool holdout, PredictionType prediction_type,
     uint num_random_splits, bool order_snps, uint max_depth, const std::vector<double>& regularization_factor, bool regularization_usedepth,
-    BootstrapTS bootstrap_ts, bool by_end, uint block_size, uint period) {
+    BootstrapTS bootstrap_ts, bool by_end, uint block_size, uint period, std::vector<double>& errors,
+    std::vector<double>& coefs, Rcpp::NumericMatrix input_x, Rcpp::NumericMatrix input_y) {
 
   this->verbose_out = verbose_out;
 
@@ -152,7 +157,7 @@ void Forest::initR(std::unique_ptr<Data> input_data, uint mtry, uint num_trees, 
   init(MEM_DOUBLE, std::move(input_data), mtry, "", num_trees, seed, num_threads, importance_mode, min_node_size,
       prediction_mode, sample_with_replacement, unordered_variable_names, memory_saving_splitting, splitrule,
       predict_all, sample_fraction, alpha, minprop, holdout, prediction_type, num_random_splits, order_snps, max_depth,
-      regularization_factor, regularization_usedepth, bootstrap_ts, by_end, block_size, period);
+      regularization_factor, regularization_usedepth, bootstrap_ts, by_end, block_size, period, errors, coefs, input_x, input_y);
 
   // Set variables to be always considered for splitting
   if (!always_split_variable_names.empty()) {
@@ -187,8 +192,12 @@ void Forest::init(MemoryMode memory_mode, std::unique_ptr<Data> input_data, uint
     bool memory_saving_splitting, SplitRule splitrule, bool predict_all, std::vector<double>& sample_fraction,
     double alpha, double minprop, bool holdout, PredictionType prediction_type, uint num_random_splits, bool order_snps,
     uint max_depth, const std::vector<double>& regularization_factor, bool regularization_usedepth,
-    BootstrapTS bootstrap_ts, bool by_end, uint block_size, uint period) {
+    BootstrapTS bootstrap_ts, bool by_end, uint block_size, uint period, std::vector<double>& errors,
+    std::vector<double>& coefs, Rcpp::NumericMatrix input_x, Rcpp::NumericMatrix input_y) {
 
+  this->input_x = input_x;
+  this->input_y = input_y;
+  
   // Initialize data with memmode
   this->data = std::move(input_data);
 
@@ -237,16 +246,18 @@ void Forest::init(MemoryMode memory_mode, std::unique_ptr<Data> input_data, uint
   this->by_end = by_end;
   this->block_size = block_size;
   this->period = period;
+  this->errors = errors;
+  this->coefs = coefs;
 
   // Set number of samples and variables
   num_samples = data->getNumRows();
+  
   num_independent_variables = data->getNumCols();
 
   // Set unordered factor variables
-  if (!prediction_mode) {
+  if (!prediction_mode)
     data->setIsOrderedVariable(unordered_variable_names);
-  }
-
+    
   initInternal();
 
   // Init split select weights
@@ -302,7 +313,7 @@ void Forest::run(bool verbose, bool compute_oob_error) {
     }
 
     grow();
-
+    
     if (verbose && verbose_out) {
       *verbose_out << "Computing prediction error .." << std::endl;
     }
@@ -454,10 +465,10 @@ void Forest::grow() {
 
   // Create thread ranges
   equalSplit(thread_ranges, 0, num_trees - 1, num_threads);
-
+  
   // Call special grow functions of subclasses. There trees must be created.
   growInternal();
-
+  
   // Init trees, create a seed for each tree, based on main seed
   std::uniform_int_distribution<uint> udist;
   for (size_t i = 0; i < num_trees; ++i) {
@@ -483,12 +494,21 @@ void Forest::grow() {
     } else {
       tree_manual_inbag = &manual_inbag[0];
     }
-
-    trees[i]->init(data.get(), mtry, num_samples, tree_seed, &deterministic_varIDs,
-                   tree_split_select_weights, importance_mode, min_node_size, sample_with_replacement, memory_saving_splitting,
-                   splitrule, &case_weights, tree_manual_inbag, keep_inbag, &sample_fraction, alpha, minprop, holdout,
-                   num_random_splits, max_depth, &regularization_factor, regularization_usedepth,
-                   bootstrap_ts, by_end, block_size, period, &split_varIDs_used);
+    
+    
+    if(bootstrap_ts != AR_SIEVE){
+      trees[i]->init(data.get(), mtry, num_samples, tree_seed, &deterministic_varIDs,
+                                  tree_split_select_weights, importance_mode, min_node_size, sample_with_replacement, memory_saving_splitting,
+                                  splitrule, &case_weights, tree_manual_inbag, keep_inbag, &sample_fraction, alpha, minprop, holdout,
+                                  num_random_splits, max_depth, &regularization_factor, regularization_usedepth,
+                                  bootstrap_ts, by_end, block_size, period, &split_varIDs_used);
+    }else{
+      trees[i]->init(NULL, mtry, num_samples, tree_seed, &deterministic_varIDs,
+                     tree_split_select_weights, importance_mode, min_node_size, sample_with_replacement, memory_saving_splitting,
+                     splitrule, &case_weights, tree_manual_inbag, keep_inbag, &sample_fraction, alpha, minprop, holdout,
+                     num_random_splits, max_depth, &regularization_factor, regularization_usedepth,
+                     bootstrap_ts, by_end, block_size, period, &split_varIDs_used, errors, coefs, input_x, input_y, data.get()->getIsOrderedVariable(), data.get()->getVariableNames());
+    }
   }
 
 // Init variable importance
@@ -535,7 +555,7 @@ void Forest::grow() {
     throw std::runtime_error("User interrupt.");
   }
 #endif
-
+  
   // Sum thread importances
   if (importance_mode == IMP_GINI || importance_mode == IMP_GINI_CORRECTED) {
     variable_importance.resize(num_independent_variables, 0);
@@ -546,13 +566,13 @@ void Forest::grow() {
     }
     variable_importance_threads.clear();
   }
-
+  
 #endif
 
 // Divide importance by number of trees
   if (importance_mode == IMP_GINI || importance_mode == IMP_GINI_CORRECTED) {
     for (auto& v : variable_importance) {
-      v /= num_trees;
+     v /= num_trees;
     }
   }
 }
@@ -616,6 +636,8 @@ void Forest::predict() {
 #endif
 }
 
+
+// to be modified for prediction computations
 void Forest::computePredictionError() {
 
 // Predict trees in multiple threads
@@ -625,7 +647,10 @@ void Forest::computePredictionError() {
   clock_t start_time = clock();
   clock_t lap_time = clock();
   for (size_t i = 0; i < num_trees; ++i) {
-    trees[i]->predict(data.get(), true);
+    if(bootstrap_ts != AR_SIEVE)
+      trees[i]->predict(data.get(), true);
+    else
+      trees[i]->predict(data.get(), false);
     progress++;
     showProgress("Predicting..", start_time, lap_time);
   }
@@ -635,7 +660,10 @@ void Forest::computePredictionError() {
   threads.reserve(num_threads);
   progress = 0;
   for (uint i = 0; i < num_threads; ++i) {
-    threads.emplace_back(&Forest::predictTreesInThread, this, i, data.get(), true);
+    if(bootstrap_ts != AR_SIEVE)
+      threads.emplace_back(&Forest::predictTreesInThread, this, i, data.get(), true);
+    else
+      threads.emplace_back(&Forest::predictTreesInThread, this, i, data.get(), false);
   }
   showProgress("Computing prediction error..", num_trees);
   for (auto &thread : threads) {
@@ -800,7 +828,8 @@ void Forest::predictTreesInThread(uint thread_idx, const Data* prediction_data, 
   if (thread_ranges.size() > thread_idx + 1) {
     for (size_t i = thread_ranges[thread_idx]; i < thread_ranges[thread_idx + 1]; ++i) {
       trees[i]->predict(prediction_data, oob_prediction);
-
+      
+      
       // Check for user interrupt
 #ifdef R_BUILD
       if (aborted) {
@@ -1111,4 +1140,4 @@ void Forest::showProgress(std::string operation, size_t max_progress) {
 }
 #endif
 
-} // namespace rangerts
+} // namespace rangerts.modified

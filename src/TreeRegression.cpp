@@ -19,7 +19,7 @@
 #include "TreeRegression.h"
 #include "Data.h"
 
-namespace rangerts {
+namespace rangertsModified {
 
 TreeRegression::TreeRegression(std::vector<std::vector<size_t>>& child_nodeIDs, std::vector<size_t>& split_varIDs,
     std::vector<double>& split_values) :
@@ -923,4 +923,4 @@ void TreeRegression::addImpurityImportance(size_t nodeID, size_t varID, double d
   }
 }
 
-} // namespace rangerts
+} // namespace rangerts_modified

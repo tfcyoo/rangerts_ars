@@ -19,7 +19,7 @@
 #include "ForestSurvival.h"
 #include "Data.h"
 
-namespace rangerts {
+namespace rangertsModified {
 
 void ForestSurvival::loadForest(size_t num_trees, std::vector<std::vector<std::vector<size_t>> >& forest_child_nodeIDs,
     std::vector<std::vector<size_t>>& forest_split_varIDs, std::vector<std::vector<double>>& forest_split_values,
@@ -333,4 +333,4 @@ size_t ForestSurvival::getTreePredictionTerminalNodeID(size_t tree_idx, size_t s
 
 // #nocov end
 
-}// namespace rangerts
+}// namespace rangerts_modified

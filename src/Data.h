@@ -17,22 +17,25 @@
 #include <numeric>
 #include <random>
 #include <algorithm>
+#include <Rcpp.h>
 
 #include "globals.h"
+//#include "utility.h"
 
-namespace rangerts {
+namespace rangertsModified {
 
 class Data {
 public:
   Data();
 
-  Data(const Data&) = delete;
-  Data& operator=(const Data&) = delete;
+  //Data(const Data&) = delete;
+  //Data& operator=(const Data&) = delete;
 
   virtual ~Data() = default;
-
+  virtual std::unique_ptr<Data> clone() const = 0;
   virtual double get_x(size_t row, size_t col) const = 0;
   virtual double get_y(size_t row, size_t col) const = 0;
+  //virtual std::vector<double> get_Y() = 0;
 
   size_t getVariableID(const std::string& variable_name) const;
 
@@ -166,6 +169,8 @@ public:
     if (varID >= num_cols) {
       varID = getUnpermutedVarID(varID);
     }
+    //if(varID == 0)
+    //  return true;
     return is_ordered_variable[varID];
   }
 
@@ -223,6 +228,6 @@ protected:
   bool order_snps;
 };
 
-} // namespace rangerts
+} // namespace rangerts_modified
 
 #endif /* DATA_H_ */

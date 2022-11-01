@@ -28,7 +28,7 @@
 #include "Tree.h"
 #include "Data.h"
 
-namespace rangerts {
+namespace rangertsModified {
 
 class Forest {
 public:
@@ -49,7 +49,9 @@ public:
       std::string case_weights_file, bool predict_all, double sample_fraction, double alpha, double minprop,
       bool holdout, PredictionType prediction_type, uint num_random_splits, uint max_depth,
       const std::vector<double>& regularization_factor, bool regularization_usedepth,
-      BootstrapTS bootstrap_ts, bool by_end, uint block_size, uint period);
+      BootstrapTS bootstrap_ts, bool by_end, uint block_size, uint period,
+      std::vector<double>& errors, std::vector<double>& coefs, Rcpp::NumericMatrix input_x, Rcpp::NumericMatrix input_y);
+  
   void initR(std::unique_ptr<Data> input_data, uint mtry, uint num_trees, std::ostream* verbose_out, uint seed,
       uint num_threads, ImportanceMode importance_mode, uint min_node_size,
       std::vector<std::vector<double>>& split_select_weights,
@@ -59,14 +61,17 @@ public:
       bool keep_inbag, std::vector<double>& sample_fraction, double alpha, double minprop, bool holdout,
       PredictionType prediction_type, uint num_random_splits, bool order_snps, uint max_depth,
       const std::vector<double>& regularization_factor, bool regularization_usedepth,
-      BootstrapTS bootstrap_ts, bool by_end, uint block_size, uint period);
-  void init(MemoryMode memory_mode, std::unique_ptr<Data> input_data, uint mtry, std::string output_prefix,
+      BootstrapTS bootstrap_ts, bool by_end, uint block_size, uint period,
+      std::vector<double>& errors, std::vector<double>& coefs, Rcpp::NumericMatrix input_x, Rcpp::NumericMatrix input_y);
+ 
+ void init(MemoryMode memory_mode, std::unique_ptr<Data> input_data, uint mtry, std::string output_prefix,
       uint num_trees, uint seed, uint num_threads, ImportanceMode importance_mode, uint min_node_size,
       bool prediction_mode, bool sample_with_replacement, const std::vector<std::string>& unordered_variable_names,
       bool memory_saving_splitting, SplitRule splitrule, bool predict_all, std::vector<double>& sample_fraction,
       double alpha, double minprop, bool holdout, PredictionType prediction_type, uint num_random_splits,
       bool order_snps, uint max_depth, const std::vector<double>& regularization_factor, bool regularization_usedepth,
-      BootstrapTS bootstrap_ts, bool by_end, uint block_size, uint period);
+      BootstrapTS bootstrap_ts, bool by_end, uint block_size, uint period,
+      std::vector<double>& errors, std::vector<double>& coefs, Rcpp::NumericMatrix input_x, Rcpp::NumericMatrix input_y);
   virtual void initInternal() = 0;
 
   // Grow or predict
@@ -144,6 +149,10 @@ public:
   const std::vector<std::vector<size_t>>& getSnpOrder() const {
     return data->getSnpOrder();
   }
+  
+  std::vector<double> getPredictionIntervals(){
+    return intervals;
+  }
 
 protected:
   void grow();
@@ -177,7 +186,12 @@ protected:
   // Set split select weights and variables to be always considered for splitting
   void setSplitWeightVector(std::vector<std::vector<double>>& split_select_weights);
   void setAlwaysSplitVariables(const std::vector<std::string>& always_split_variable_names);
-
+  
+  void setPredictionIntervals(std::vector<double> intervals){
+    this->intervals = intervals;
+  }
+  
+  
   // Show progress every few seconds
 #ifdef OLD_WIN_R_BUILD
   void showProgress(std::string operation, clock_t start_time, clock_t& lap_time);
@@ -259,7 +273,12 @@ protected:
   bool by_end;
   uint block_size;
   uint period;
-
+  std::vector<double> errors;
+  std::vector<double> coefs;
+  std::vector<std::unique_ptr<Data>> bootstrapped_series; //contains the bootstrapped data from AR_sieve_bootstrap
+  std::vector<double> intervals;
+  Rcpp::NumericMatrix input_x;
+  Rcpp::NumericMatrix input_y;
   // Computation progress (finished trees)
   size_t progress;
 #ifdef R_BUILD
@@ -268,6 +287,6 @@ protected:
 #endif
 };
 
-} // namespace rangerts
+} // namespace rangerts_modified
 
 #endif /* FOREST_H_ */

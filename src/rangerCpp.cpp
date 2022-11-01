@@ -44,11 +44,11 @@
 #include "DataSparse.h"
 #include "utility.h"
 
-using namespace rangerts;
+using namespace rangertsModified;
 
 // [[Rcpp::depends(RcppEigen)]]
 // [[Rcpp::export]]
-Rcpp::List rangertsCpp(uint treetype, Rcpp::NumericMatrix& input_x, Rcpp::NumericMatrix& input_y,
+Rcpp::List rangertsCpp(uint treetype, Rcpp::NumericMatrix input_x, Rcpp::NumericMatrix input_y,
     std::vector<std::string> variable_names, uint mtry, uint num_trees, bool verbose, uint seed, uint num_threads,
     bool write_forest, uint importance_mode_r, uint min_node_size,
     std::vector<std::vector<double>>& split_select_weights, bool use_split_select_weights,
@@ -62,14 +62,14 @@ Rcpp::List rangertsCpp(uint treetype, Rcpp::NumericMatrix& input_x, Rcpp::Numeri
     bool use_sparse_data, bool order_snps, bool oob_error, uint max_depth,
     std::vector<std::vector<size_t>>& inbag, bool use_inbag,
     std::vector<double>& regularization_factor, bool use_regularization_factor, bool regularization_usedepth,
-    uint bootstrap_ts_r, bool by_end, uint block_size, uint period) {
+    uint bootstrap_ts_r, bool by_end, uint block_size, uint period,std::vector<double>& errors, std::vector<double>& coefs) {
 
   Rcpp::List result;
 
   try {
     std::unique_ptr<Forest> forest { };
     std::unique_ptr<Data> data { };
-
+    
     // Empty split select weights and always split variables if not used
     if (!use_split_select_weights) {
       split_select_weights.clear();
@@ -96,7 +96,7 @@ Rcpp::List rangertsCpp(uint treetype, Rcpp::NumericMatrix& input_x, Rcpp::Numeri
     } else {
       verbose_out = new std::stringstream;
     }
-
+    
     size_t num_rows;
     size_t num_cols;
     if (use_sparse_data) {
@@ -109,7 +109,7 @@ Rcpp::List rangertsCpp(uint treetype, Rcpp::NumericMatrix& input_x, Rcpp::Numeri
 
     // Initialize data
     if (use_sparse_data) {
-      data = make_unique<DataSparse>(sparse_x, input_y, variable_names, num_rows, num_cols);
+     data = make_unique<DataSparse>(sparse_x, input_y, variable_names, num_rows, num_cols);
     } else {
       data = make_unique<DataRcpp>(input_x, input_y, variable_names, num_rows, num_cols);
     }
@@ -154,7 +154,8 @@ Rcpp::List rangertsCpp(uint treetype, Rcpp::NumericMatrix& input_x, Rcpp::Numeri
         importance_mode, min_node_size, split_select_weights, always_split_variable_names,
         prediction_mode, sample_with_replacement, unordered_variable_names, save_memory, splitrule, case_weights,
         inbag, predict_all, keep_inbag, sample_fraction, alpha, minprop, holdout, prediction_type, num_random_splits,
-        order_snps, max_depth, regularization_factor, regularization_usedepth, bootstrap_ts, by_end, block_size, period);
+        order_snps, max_depth, regularization_factor, regularization_usedepth, bootstrap_ts, by_end, block_size, period,
+        errors, coefs, input_x, input_y);
 
     // Load forest object if in prediction mode
     if (prediction_mode) {
@@ -205,7 +206,7 @@ Rcpp::List rangertsCpp(uint treetype, Rcpp::NumericMatrix& input_x, Rcpp::Numeri
             << std::endl;
       }
     }
-
+    
     // Use first non-empty dimension of predictions
     const std::vector<std::vector<std::vector<double>>>& predictions = forest->getPredictions();
     if (predictions.size() == 1) {
@@ -218,6 +219,10 @@ Rcpp::List rangertsCpp(uint treetype, Rcpp::NumericMatrix& input_x, Rcpp::Numeri
       result.push_back(forest->getPredictions(), "predictions");
     }
 
+    if(prediction_mode){
+      result.push_back(forest->getPredictionIntervals(), "intervals");
+    }
+    
     // Return output
     result.push_back(forest->getNumTrees(), "num.trees");
     result.push_back(forest->getNumIndependentVariables(), "num.independent.variables");
@@ -274,6 +279,8 @@ Rcpp::List rangertsCpp(uint treetype, Rcpp::NumericMatrix& input_x, Rcpp::Numeri
     if (!verbose) {
       delete verbose_out;
     }
+    
+  
   } catch (std::exception& e) {
     if (strcmp(e.what(), "User interrupt.") != 0) {
       Rcpp::Rcerr << "Error: " << e.what() << " rangerts will EXIT now." << std::endl;

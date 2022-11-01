@@ -23,6 +23,7 @@
 #include <memory>
 #include <type_traits>
 #include <utility>
+#include <Rcpp.h>
 
 #ifdef R_BUILD
 #include <Rinternals.h>
@@ -31,7 +32,7 @@
 #include "globals.h"
 #include "Data.h"
 
-namespace rangerts {
+namespace rangertsModified {
 
 /**
  * Split sequence start..end in num_parts parts with sizes as equal as possible.
@@ -147,6 +148,18 @@ inline void readVector2D(std::vector<std::vector<T>>& result, std::ifstream& fil
  */
 void loadDoubleVectorFromFile(std::vector<double>& result, std::string filename);
 // #nocov end
+
+
+/**
+ * Draw random numbers in a range without replacements.
+ * @param data The time series
+ * @param result Vector to add results to. Will not be cleaned before filling.
+ * @param errors Centered errors obtained from fitting an AR model on the model
+ * @param coefs Coefficients obtained by fitting an AR model on the data
+ */
+void ar_sieve_bootstrap(Data* result, std::vector<double>& errors,
+                        std::vector<double>& coefs, std::mt19937_64& random_number_generator);
+
 
 /**
  * Draw random numbers in a range without replacements.
@@ -568,6 +581,6 @@ template<class T, class ... Args>
 typename detail::_Unique_if<T>::_Known_bound make_unique(Args&&...) = delete;
 
 }
-// namespace rangerts
+// namespace rangerts_modified
 
 #endif /* UTILITY_H_ */

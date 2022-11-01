@@ -12,7 +12,7 @@ R package "rangerts" under GPL3 license.
 #ifndef GLOBALS_H_
 #define GLOBALS_H_
 
-namespace rangerts {
+namespace rangertsModified {
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -69,7 +69,8 @@ enum BootstrapTS {
   MOVING = 3,
   STATIONARY = 4,
   CIRCULAR = 5,
-  SEASONAL = 6
+  SEASONAL = 6,
+  AR_SIEVE = 7
 };
 
 // Split mode
@@ -120,6 +121,6 @@ const double STATUS_INTERVAL = 30.0;
 // Threshold for q value split method switch
 const double Q_THRESHOLD = 0.02;
 
-} // namespace rangerts
+} // namespace rangerts_modified
 
 #endif /* GLOBALS_H_ */

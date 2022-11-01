@@ -17,7 +17,7 @@
 #include "globals.h"
 #include "Tree.h"
 
-namespace rangerts {
+namespace rangertsModified {
 
 class TreeClassification: public Tree {
 public:
@@ -106,6 +106,6 @@ private:
   std::vector<size_t> counter_per_class;
 };
 
-} // namespace rangerts
+} // namespace rangerts_modified
 
 #endif /* TREECLASSIFICATION_H_ */

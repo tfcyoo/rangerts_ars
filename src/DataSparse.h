@@ -34,7 +34,7 @@
 #include "utility.h"
 #include "Data.h"
 
-namespace rangerts {
+namespace rangertsModified {
 
 class DataSparse: public Data {
 public:
@@ -43,11 +43,15 @@ public:
   DataSparse(Eigen::SparseMatrix<double>& x, Rcpp::NumericMatrix& y, std::vector<std::string> variable_names, size_t num_rows,
       size_t num_cols);
 
-  DataSparse(const DataSparse&) = delete;
-  DataSparse& operator=(const DataSparse&) = delete;
+  //DataSparse(const DataSparse&) = delete;
+  //DataSparse& operator=(const DataSparse&) = delete;
 
   virtual ~DataSparse() override = default;
-
+  
+  virtual std::unique_ptr<Data> clone() const override{
+    return make_unique<DataSparse>(*this);
+  }
+  
   double get_x(size_t row, size_t col) const override {
     // Use permuted data for corrected impurity importance
     if (col >= num_cols) {
@@ -74,12 +78,12 @@ public:
     y[col * num_rows + row] = value;
   }
   // #nocov end
-
+ 
 private:
   Eigen::SparseMatrix<double> x;
   Rcpp::NumericMatrix y;
 };
 
-} // namespace rangerts
+} // namespace rangerts_modified
 
 #endif /* DATASPARSE_H_ */

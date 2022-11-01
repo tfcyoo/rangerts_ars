@@ -17,7 +17,7 @@
 #include "globals.h"
 #include "Tree.h"
 
-namespace rangerts {
+namespace rangertsModified {
 
 class TreeSurvival: public Tree {
 public:
@@ -110,6 +110,6 @@ private:
   std::vector<size_t> num_samples_at_risk;
 };
 
-} // namespace rangerts
+} // namespace rangerts_modified
 
 #endif /* TREESURVIVAL_H_ */

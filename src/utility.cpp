@@ -11,6 +11,7 @@
 
 #include <math.h>
 #include <iostream>
+#include <fstream>
 #include <sstream>
 #include <unordered_set>
 #include <unordered_map>
@@ -24,8 +25,9 @@
 #include "utility.h"
 #include "globals.h"
 #include "Data.h"
+#include "DataRcpp.h"
 
-namespace rangerts {
+namespace rangertsModified {
 
 void equalSplit(std::vector<uint>& result, uint start, uint end, uint num_parts) {
 
@@ -398,6 +400,7 @@ void splitString(std::vector<double>& result, const std::string& input, char spl
 void shuffleAndSplit(std::vector<size_t>& first_part, std::vector<size_t>& second_part, size_t n_all, size_t n_first,
     std::mt19937_64 random_number_generator) {
 
+  
   // Reserve space
   first_part.resize(n_all);
 
@@ -687,4 +690,47 @@ double betaLogLik(double y, double mean, double phi) {
       + ((1 - mean) * phi - 1) * log(1 - y));
 }
 
-} // namespace rangerts
+void ar_sieve_bootstrap(Data* result, std::vector<double>& errors, std::vector<double>& coefs,
+                        std::mt19937_64& random_number_generator){
+ 
+  size_t ar_order_p = coefs.size();
+
+  double mu = 0;
+
+  if((*result).getNumCols() == coefs.size()-1){
+    ar_order_p = coefs.size() - 1;
+    mu = coefs[ar_order_p];
+  }
+
+  //initial data for AR simulation with X_{T-p+1},...,X_{T} : e.g for p = 3 we have X_{T-2}, X_{T-1}, X_{T}
+  std::vector<double> init_observation(ar_order_p, mu);
+
+  //add init_observation at the begining of the data to be able to compute X_t = alpha_1*X_{t-1} + ...+ alpa_p*X{t-p}
+  std::vector<double> observations(init_observation.begin(), init_observation.end());
+
+  size_t observations_size = (*result).getNumRows() + ar_order_p;
+
+  std::uniform_int_distribution<size_t> unif_dist(0, errors.size() - 1);
+  bool setting_error = false;
+  
+  for (size_t i = ar_order_p; i < observations_size; ++i) {
+
+    size_t draw = unif_dist(random_number_generator);
+    
+    // sum will contain the weighted sum alpha_i*X_{t-i}
+    double sum = errors[draw] + mu;
+    
+    //double sum = errors[i-ar_order_p] + mu;
+    for(size_t j = 0; j < ar_order_p; j++){
+      (*result).set_x(j, i - ar_order_p, observations[i-j-1], setting_error);
+      sum +=  coefs[j]*(observations[i-j-1] - mu);
+    }
+
+    //observations[i-ar_order_p] = sum;
+    observations.push_back(sum);
+    (*result).set_y(0, i - ar_order_p , sum, setting_error);
+  }
+
+}
+
+} // namespace rangerts_modified

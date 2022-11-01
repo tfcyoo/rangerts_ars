@@ -21,16 +21,20 @@
 #include "utility.h"
 #include "Data.h"
 
-namespace rangerts {
+namespace rangertsModified {
 
 class DataFloat: public Data {
 public:
   DataFloat() = default;
 
-  DataFloat(const DataFloat&) = delete;
-  DataFloat& operator=(const DataFloat&) = delete;
+  //DataFloat(const DataFloat&) = delete;
+  //DataFloat& operator=(const DataFloat&) = delete;
 
   virtual ~DataFloat() override = default;
+  
+  virtual std::unique_ptr<Data> clone() const override{
+    return  make_unique<DataFloat>(*this);
+  }
 
   double get_x(size_t row, size_t col) const override {
     // Use permuted data for corrected impurity importance
@@ -63,13 +67,13 @@ public:
   void set_y(size_t col, size_t row, double value, bool& error) override {
     y[col * num_rows + row] = value;
   }
-
+  
 private:
   std::vector<float> x;
   std::vector<float> y;
 };
 
-} // namespace rangerts
+} // namespace rangerts_modified
 
 #endif /* DATAFLOAT_H_ */
 // #nocov end

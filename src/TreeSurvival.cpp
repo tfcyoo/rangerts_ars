@@ -19,7 +19,7 @@
 #include "TreeSurvival.h"
 #include "Data.h"
 
-namespace rangerts {
+namespace rangertsModified {
 
 TreeSurvival::TreeSurvival(std::vector<double>* unique_timepoints, std::vector<size_t>* response_timepointIDs) :
     unique_timepoints(unique_timepoints), response_timepointIDs(response_timepointIDs), num_deaths(0), num_samples_at_risk(
@@ -925,4 +925,4 @@ void TreeSurvival::addImpurityImportance(size_t nodeID, size_t varID, double dec
   }
 }
 
-} // namespace rangerts
+} // namespace rangerts_modified

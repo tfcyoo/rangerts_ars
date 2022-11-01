@@ -16,7 +16,7 @@
 #include "TreeProbability.h"
 #include "Data.h"
 
-namespace rangerts {
+namespace rangertsModified {
 
 void ForestProbability::loadForest(size_t num_trees,
     std::vector<std::vector<std::vector<size_t>> >& forest_child_nodeIDs,
@@ -338,4 +338,4 @@ size_t ForestProbability::getTreePredictionTerminalNodeID(size_t tree_idx, size_
 
 // #nocov end
 
-}// namespace rangerts
+}// namespace rangerts_modified
