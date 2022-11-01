@@ -1,17 +1,16 @@
-Package: rangertsModified
+Package: rangertsARS
 Type: Package
 Title: A Fast Implementation of Random Forests with block bootstrapping and ar_sieve_bootstrapping for time series
-Version: 0.0.3
-Author: Hui YAN, Benjamin Goehry
-Maintainer: Hui YAN <hui.yan@edf.fr>
-Description: The original package of ranger and block bootstrapping for time series.
+Version: 0.1
+Author: Cabrel Teguemne
+Maintainer: Cabrel Teguemne <tfcyoo@gmail.com>
+Description: The original package of ranger, block bootstrapping and ar_sieve_bootstrapping for time series 
 License: GPL-3
 Imports:
     Rcpp (>= 0.11.2),
     Matrix,
     magrittr,
-	forecast,
-	rangerts
+	forecast
 LinkingTo: Rcpp, RcppEigen
 Depends: R (>= 3.1)
 Suggests:

@@ -13,7 +13,7 @@
 #include "utility.h"
 #include "Data.h"
 
-namespace rangertsModified {
+namespace rangertsARS {
 
 TreeProbability::TreeProbability(std::vector<double>* class_values, std::vector<uint>* response_classIDs,
     std::vector<std::vector<size_t>>* sampleIDs_per_class, std::vector<double>* class_weights) :

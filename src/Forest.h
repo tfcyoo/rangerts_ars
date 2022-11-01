@@ -28,7 +28,7 @@
 #include "Tree.h"
 #include "Data.h"
 
-namespace rangertsModified {
+namespace rangertsARS {
 
 class Forest {
 public:
@@ -51,7 +51,7 @@ public:
       const std::vector<double>& regularization_factor, bool regularization_usedepth,
       BootstrapTS bootstrap_ts, bool by_end, uint block_size, uint period,
       std::vector<double>& errors, std::vector<double>& coefs, Rcpp::NumericMatrix input_x, Rcpp::NumericMatrix input_y);
-  
+
   void initR(std::unique_ptr<Data> input_data, uint mtry, uint num_trees, std::ostream* verbose_out, uint seed,
       uint num_threads, ImportanceMode importance_mode, uint min_node_size,
       std::vector<std::vector<double>>& split_select_weights,
@@ -63,7 +63,7 @@ public:
       const std::vector<double>& regularization_factor, bool regularization_usedepth,
       BootstrapTS bootstrap_ts, bool by_end, uint block_size, uint period,
       std::vector<double>& errors, std::vector<double>& coefs, Rcpp::NumericMatrix input_x, Rcpp::NumericMatrix input_y);
- 
+
  void init(MemoryMode memory_mode, std::unique_ptr<Data> input_data, uint mtry, std::string output_prefix,
       uint num_trees, uint seed, uint num_threads, ImportanceMode importance_mode, uint min_node_size,
       bool prediction_mode, bool sample_with_replacement, const std::vector<std::string>& unordered_variable_names,
@@ -149,7 +149,7 @@ public:
   const std::vector<std::vector<size_t>>& getSnpOrder() const {
     return data->getSnpOrder();
   }
-  
+
   std::vector<double> getPredictionIntervals(){
     return intervals;
   }
@@ -186,12 +186,12 @@ protected:
   // Set split select weights and variables to be always considered for splitting
   void setSplitWeightVector(std::vector<std::vector<double>>& split_select_weights);
   void setAlwaysSplitVariables(const std::vector<std::string>& always_split_variable_names);
-  
+
   void setPredictionIntervals(std::vector<double> intervals){
     this->intervals = intervals;
   }
-  
-  
+
+
   // Show progress every few seconds
 #ifdef OLD_WIN_R_BUILD
   void showProgress(std::string operation, clock_t start_time, clock_t& lap_time);

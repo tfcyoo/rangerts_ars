@@ -27,7 +27,7 @@
 #include "Data.h"
 #include "DataRcpp.h"
 
-namespace rangertsModified {
+namespace rangertsARS {
 
 void equalSplit(std::vector<uint>& result, uint start, uint end, uint num_parts) {
 
@@ -400,7 +400,7 @@ void splitString(std::vector<double>& result, const std::string& input, char spl
 void shuffleAndSplit(std::vector<size_t>& first_part, std::vector<size_t>& second_part, size_t n_all, size_t n_first,
     std::mt19937_64 random_number_generator) {
 
-  
+
   // Reserve space
   first_part.resize(n_all);
 
@@ -692,7 +692,7 @@ double betaLogLik(double y, double mean, double phi) {
 
 void ar_sieve_bootstrap(Data* result, std::vector<double>& errors, std::vector<double>& coefs,
                         std::mt19937_64& random_number_generator){
- 
+
   size_t ar_order_p = coefs.size();
 
   double mu = 0;
@@ -712,14 +712,14 @@ void ar_sieve_bootstrap(Data* result, std::vector<double>& errors, std::vector<d
 
   std::uniform_int_distribution<size_t> unif_dist(0, errors.size() - 1);
   bool setting_error = false;
-  
+
   for (size_t i = ar_order_p; i < observations_size; ++i) {
 
     size_t draw = unif_dist(random_number_generator);
-    
+
     // sum will contain the weighted sum alpha_i*X_{t-i}
     double sum = errors[draw] + mu;
-    
+
     //double sum = errors[i-ar_order_p] + mu;
     for(size_t j = 0; j < ar_order_p; j++){
       (*result).set_x(j, i - ar_order_p, observations[i-j-1], setting_error);

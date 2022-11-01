@@ -28,7 +28,7 @@
 
 #include "DataSparse.h"
 
-namespace rangertsModified {
+namespace rangertsARS {
 
 DataSparse::DataSparse(Eigen::SparseMatrix<double>& x, Rcpp::NumericMatrix& y, std::vector<std::string> variable_names, size_t num_rows,
     size_t num_cols) :

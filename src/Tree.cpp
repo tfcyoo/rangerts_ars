@@ -15,7 +15,7 @@
 #include "Tree.h"
 #include "utility.h"
 
-namespace rangertsModified {
+namespace rangertsARS {
 
 Tree::Tree() :
     mtry(0), num_samples(0), num_samples_oob(0), min_node_size(0), deterministic_varIDs(0), split_select_weights(0), case_weights(
@@ -39,32 +39,6 @@ Tree::Tree(std::vector<std::vector<size_t>>& child_nodeIDs, std::vector<size_t>&
         0) {
 }
 
-void Tree::init(Data* data, uint mtry, size_t num_samples, uint seed, std::vector<size_t>* deterministic_varIDs,
-          std::vector<double>* split_select_weights, ImportanceMode importance_mode, uint min_node_size,
-          bool sample_with_replacement, bool memory_saving_splitting, SplitRule splitrule,
-          std::vector<double>* case_weights, std::vector<size_t>* manual_inbag, bool keep_inbag,
-          std::vector<double>* sample_fraction, double alpha, double minprop, bool holdout, uint num_random_splits,
-          uint max_depth, std::vector<double>* regularization_factor, bool regularization_usedepth,
-          BootstrapTS bootstrap_ts, bool by_end, uint block_size, uint period,
-          std::vector<bool>* split_varIDs_used, std::vector<double>& errors,
-          std::vector<double>& coefs, Rcpp::NumericMatrix x, Rcpp::NumericMatrix y, std::vector<bool>& unordered_variable_names,
-                const  std::vector<std::string>& variable_names){
-      
-  this->x = x;
-  this->y =y;
-  this->errors = errors;
-  this->coefs = coefs;
-  this->unordered_variable_names = unordered_variable_names;
-  this->variable_names = variable_names;
-
-  init(data,mtry, num_samples, seed, deterministic_varIDs, split_select_weights, importance_mode, min_node_size,
-       sample_with_replacement, memory_saving_splitting, splitrule, case_weights, manual_inbag, keep_inbag, sample_fraction, alpha,
-       minprop, holdout, num_random_splits, max_depth, regularization_factor, regularization_usedepth,  bootstrap_ts, by_end, block_size, period,
-       split_varIDs_used);
-  
-}
-
-
 
 void Tree::init(Data* data, uint mtry, size_t num_samples, uint seed, std::vector<size_t>* deterministic_varIDs,
     std::vector<double>* split_select_weights, ImportanceMode importance_mode, uint min_node_size,
@@ -72,7 +46,8 @@ void Tree::init(Data* data, uint mtry, size_t num_samples, uint seed, std::vecto
     std::vector<size_t>* manual_inbag, bool keep_inbag, std::vector<double>* sample_fraction, double alpha,
     double minprop, bool holdout, uint num_random_splits, uint max_depth, std::vector<double>* regularization_factor,
     bool regularization_usedepth, BootstrapTS bootstrap_ts, bool by_end, uint block_size, uint period,
-    std::vector<bool>* split_varIDs_used) {
+    std::vector<bool>* split_varIDs_used, std::vector<double>& errors,
+    std::vector<double>& coefs) {
 
   this->data = data;
   this->mtry = mtry;
@@ -113,6 +88,8 @@ void Tree::init(Data* data, uint mtry, size_t num_samples, uint seed, std::vecto
   this->regularization_usedepth = regularization_usedepth;
 
   this->split_varIDs_used = split_varIDs_used;
+  this->errors = errors;
+  this->coefs = coefs;
 
   // Regularization
   if (regularization_factor->size() > 0) {
@@ -127,30 +104,14 @@ void Tree::grow(std::vector<double>* variable_importance) {
   this->variable_importance = variable_importance;
 
   // Bootstrap, dependent if weighted or not and with or without replacement
-  
-    std::unique_ptr<Data> save_data;
+
     if(bootstrap_ts != IID){
       if(bootstrap_ts == MOVING) bootstrapMovingBlock();
       if(bootstrap_ts == STATIONARY) bootstrapStationaryBlock();
       if(bootstrap_ts == CIRCULAR) bootstrapCircularBlock();
       if(bootstrap_ts == NONOVERLAPPING) bootstrapNonOverlappingBlock();
       if(bootstrap_ts == SEASONAL) bootstrapSeasonalBlock();
-      if(bootstrap_ts == AR_SIEVE){
-                           
-       save_data = make_unique<DataRcpp>(Rcpp::clone(this->x), Rcpp::clone(this->x), this->variable_names,
-                                            this->x.nrow(), this->x.ncol());
-                         
-       this->data_ptr = make_unique<DataRcpp>(Rcpp::clone(this->x), Rcpp::clone(this->x), this->variable_names,
-                                            this->x.nrow(), this->x.ncol());
-                                            
-       this->data= data_ptr.get();
-        
-        //if(!this->prediction_mode)
-        data->setIsOrderedVariable(this->unordered_variable_names);  
-        save_data.get()->setIsOrderedVariable(this->unordered_variable_names);
-        
-        bootstrapARSieve();
-      } 
+      if(bootstrap_ts == AR_SIEVE)  bootstrapARSieve();
     } else {
       if (!case_weights->empty()) {
         if (sample_with_replacement) {
@@ -174,14 +135,14 @@ void Tree::grow(std::vector<double>* variable_importance) {
         }
       }
     }
-  
+
   // Allocate memory for tree growing
   allocateMemory();
-  
+
   // Init start and end positions
   start_pos[0] = 0;
   end_pos[0] = sampleIDs.size();
-  
+
   // While not all nodes terminal, split next node
   size_t num_open_nodes = 1;
   size_t i = 0;
@@ -202,23 +163,21 @@ void Tree::grow(std::vector<double>* variable_importance) {
     }
     ++i;
   }
-  
+
   // Delete sampleID vector to save memory
   sampleIDs.clear();
   sampleIDs.shrink_to_fit();
   cleanUpInternal();
-  
-  
+
+
   if(bootstrap_ts == AR_SIEVE){
-    this->data_ptr = std::move(save_data);
-    this->data= this->data_ptr.get();
     errors.clear();
     errors.shrink_to_fit();
     coefs.clear();
     coefs.shrink_to_fit();
   }
-    
-  
+
+
 }
 
 void Tree::predict(const Data* prediction_data, bool oob_prediction) {
@@ -864,7 +823,7 @@ void Tree::bootstrapWithoutReplacement() {
 
 // Use fraction (default 63.21%) of the samples
   size_t num_samples_inbag = (size_t) num_samples * (*sample_fraction)[0];
-  
+
   shuffleAndSplit(sampleIDs, oob_sampleIDs, num_samples, num_samples_inbag, random_number_generator);
   num_samples_oob = oob_sampleIDs.size();
 
@@ -913,13 +872,13 @@ void Tree::bootstrapWithoutReplacementWeighted() {
 }
 
 void Tree::bootstrapARSieve() {
-  
+
   ar_sieve_bootstrap(data, errors, coefs, random_number_generator);
-  
+
   sampleIDs.resize(data->getNumRows());
 
   std::iota(sampleIDs.begin(), sampleIDs.end(), 0);
-  
+
   if(!memory_saving_splitting)
     data->sort();
 }

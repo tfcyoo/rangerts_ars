@@ -22,7 +22,7 @@
 #include "globals.h"
 //#include "utility.h"
 
-namespace rangertsModified {
+namespace rangertsARS {
 
 class Data {
 public:

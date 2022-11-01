@@ -32,7 +32,7 @@
 #include "globals.h"
 #include "Data.h"
 
-namespace rangertsModified {
+namespace rangertsARS {
 
 /**
  * Split sequence start..end in num_parts parts with sizes as equal as possible.

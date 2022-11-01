@@ -21,7 +21,7 @@
 #include "utility.h"
 #include "Data.h"
 
-namespace rangertsModified {
+namespace rangertsARS {
 
 class DataChar: public Data {
 public:
@@ -31,7 +31,7 @@ public:
   //DataChar& operator=(const DataChar&) = delete;
 
   virtual ~DataChar() override = default;
-  
+
   virtual std::unique_ptr<Data> clone() const override{
     return make_unique<DataChar>(*this);
   }

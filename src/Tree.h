@@ -21,7 +21,7 @@
 #include "Data.h"
 #include "DataRcpp.h"
 
-namespace rangertsModified {
+namespace rangertsARS {
 
 class Tree {
 public:
@@ -43,18 +43,8 @@ public:
       std::vector<double>* sample_fraction, double alpha, double minprop, bool holdout, uint num_random_splits,
       uint max_depth, std::vector<double>* regularization_factor, bool regularization_usedepth,
       BootstrapTS bootstrap_ts, bool by_end, uint block_size, uint period,
-      std::vector<bool>* split_varIDs_used);
-  
-  void init(Data* data, uint mtry, size_t num_samples, uint seed, std::vector<size_t>* deterministic_varIDs,
-            std::vector<double>* split_select_weights, ImportanceMode importance_mode, uint min_node_size,
-            bool sample_with_replacement, bool memory_saving_splitting, SplitRule splitrule,
-            std::vector<double>* case_weights, std::vector<size_t>* manual_inbag, bool keep_inbag,
-            std::vector<double>* sample_fraction, double alpha, double minprop, bool holdout, uint num_random_splits,
-            uint max_depth, std::vector<double>* regularization_factor, bool regularization_usedepth,
-            BootstrapTS bootstrap_ts, bool by_end, uint block_size, uint period,
-            std::vector<bool>* split_varIDs_used, std::vector<double>& errors,
-            std::vector<double>& coefs, Rcpp::NumericMatrix x, Rcpp::NumericMatrix y, std::vector<bool>& unordered_variable_names,
-             const std::vector<std::string>& variable_names);
+      std::vector<bool>* split_varIDs_used, std::vector<double>& errors, std::vector<double>& coefs);
+
 
   virtual void allocateMemory() = 0;
 
@@ -226,7 +216,6 @@ protected:
   std::mt19937_64 random_number_generator;
 
   // Pointer to original data
-  std::unique_ptr<Data> data_ptr;
   /*const*/ Data* data;
 
   // Regularization
@@ -263,10 +252,6 @@ protected:
   size_t last_left_nodeID;
   std::vector<double> errors;
   std::vector<double> coefs;
-  Rcpp::NumericMatrix x;
-  Rcpp::NumericMatrix y;
-  std::vector<bool> unordered_variable_names;
-  std::vector<std::string> variable_names;
 };
 
 } // namespace rangerts.modified

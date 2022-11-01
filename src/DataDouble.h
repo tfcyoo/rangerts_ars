@@ -21,7 +21,7 @@
 #include "utility.h"
 #include "Data.h"
 
-namespace rangertsModified {
+namespace rangertsARS {
 
 class DataDouble: public Data {
 public:
@@ -31,7 +31,7 @@ public:
   //DataDouble& operator=(const DataDouble&) = delete;
 
   virtual ~DataDouble() override = default;
-  
+
   virtual std::unique_ptr<Data> clone() const override{
     return make_unique<DataDouble>(*this);
   }
@@ -67,7 +67,7 @@ public:
   void set_y(size_t col, size_t row, double value, bool& error) override {
     y[col * num_rows + row] = value;
   }
-  
+
 
 private:
   std::vector<double> x;

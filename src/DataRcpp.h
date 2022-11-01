@@ -34,7 +34,7 @@ http://www.imbs-luebeck.de
 #include "utility.h"
 #include "Data.h"
 
-namespace rangertsModified {
+namespace rangertsARS {
 
 class DataRcpp: public Data {
 public:
@@ -49,11 +49,11 @@ public:
     }
 
   //DataRcpp(const DataRcpp&) = delete;
-  
+
   //DataRcpp& operator=(const DataRcpp&) = delete;
 
   virtual ~DataRcpp() override = default;
-  
+
   virtual std::unique_ptr<Data> clone() const override{
     return make_unique<DataRcpp>(*this);
   }
@@ -72,28 +72,28 @@ public:
       return getSnp(row, col, col_permuted);
     }
   }
- 
+
   double get_y(size_t row, size_t col) const override {
     return y(row, col);
   }
-  
+
   void set_Y(Rcpp::NumericMatrix Y){
     this->y = Y;
   }
-  
+
   void set_X(Rcpp::NumericMatrix X){
     this->x = X;
   }
-  
+
   void setNumCols(size_t num_cols){
     this->num_cols = num_cols;
     this->num_cols_no_snp = num_cols;
   }
-  
+
   void setNumRows(size_t num_rows){
     this->num_rows = num_rows;
   }
-  
+
   void setVarNames( std::vector<std::string> variable_names){
     this->variable_names = variable_names;
   }

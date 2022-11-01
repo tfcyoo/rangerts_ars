@@ -19,7 +19,7 @@
 #include "Forest.h"
 #include "TreeSurvival.h"
 
-namespace rangertsModified {
+namespace rangertsARS {
 
 class ForestSurvival: public Forest {
 public:

@@ -19,7 +19,7 @@
 #include "TreeSurvival.h"
 #include "Data.h"
 
-namespace rangertsModified {
+namespace rangertsARS {
 
 TreeSurvival::TreeSurvival(std::vector<double>* unique_timepoints, std::vector<size_t>* response_timepointIDs) :
     unique_timepoints(unique_timepoints), response_timepointIDs(response_timepointIDs), num_deaths(0), num_samples_at_risk(

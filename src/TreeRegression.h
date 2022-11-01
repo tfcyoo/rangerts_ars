@@ -17,7 +17,7 @@
 #include "globals.h"
 #include "Tree.h"
 
-namespace rangertsModified {
+namespace rangertsARS {
 
 class TreeRegression: public Tree {
 public:

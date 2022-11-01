@@ -16,7 +16,7 @@
 #include "TreeProbability.h"
 #include "Data.h"
 
-namespace rangertsModified {
+namespace rangertsARS {
 
 void ForestProbability::loadForest(size_t num_trees,
     std::vector<std::vector<std::vector<size_t>> >& forest_child_nodeIDs,

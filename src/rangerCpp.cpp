@@ -44,7 +44,7 @@
 #include "DataSparse.h"
 #include "utility.h"
 
-using namespace rangertsModified;
+using namespace rangertsARS;
 
 // [[Rcpp::depends(RcppEigen)]]
 // [[Rcpp::export]]
@@ -69,7 +69,7 @@ Rcpp::List rangertsCpp(uint treetype, Rcpp::NumericMatrix input_x, Rcpp::Numeric
   try {
     std::unique_ptr<Forest> forest { };
     std::unique_ptr<Data> data { };
-    
+
     // Empty split select weights and always split variables if not used
     if (!use_split_select_weights) {
       split_select_weights.clear();
@@ -96,7 +96,7 @@ Rcpp::List rangertsCpp(uint treetype, Rcpp::NumericMatrix input_x, Rcpp::Numeric
     } else {
       verbose_out = new std::stringstream;
     }
-    
+
     size_t num_rows;
     size_t num_cols;
     if (use_sparse_data) {
@@ -206,7 +206,7 @@ Rcpp::List rangertsCpp(uint treetype, Rcpp::NumericMatrix input_x, Rcpp::Numeric
             << std::endl;
       }
     }
-    
+
     // Use first non-empty dimension of predictions
     const std::vector<std::vector<std::vector<double>>>& predictions = forest->getPredictions();
     if (predictions.size() == 1) {
@@ -222,7 +222,7 @@ Rcpp::List rangertsCpp(uint treetype, Rcpp::NumericMatrix input_x, Rcpp::Numeric
     if(prediction_mode){
       result.push_back(forest->getPredictionIntervals(), "intervals");
     }
-    
+
     // Return output
     result.push_back(forest->getNumTrees(), "num.trees");
     result.push_back(forest->getNumIndependentVariables(), "num.independent.variables");
@@ -279,8 +279,8 @@ Rcpp::List rangertsCpp(uint treetype, Rcpp::NumericMatrix input_x, Rcpp::Numeric
     if (!verbose) {
       delete verbose_out;
     }
-    
-  
+
+
   } catch (std::exception& e) {
     if (strcmp(e.what(), "User interrupt.") != 0) {
       Rcpp::Rcerr << "Error: " << e.what() << " rangerts will EXIT now." << std::endl;
