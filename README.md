@@ -26,7 +26,7 @@ We add 3 block bootstrapping parameters in the ranger function: bootstrap.ts, by
 To install the development version from GitHub using `devtools`, run
 ```R
 # quiet = TRUE to mask c++ compilation messages, optional
-devtools::install_github("hyanworkspace/rangerts", quiet = T)
+devtools::install_github("tfcyoo/rangerts_ars", quiet = T)
 ```
 
 

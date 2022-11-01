@@ -126,7 +126,7 @@ rangerts(
 
 \item{y}{Response vector (dependent variable), alternative interface to data with formula or dependent.variable.name. For survival use a \code{Surv()} object or a matrix with time and status.}
 
-\item{bootstrap.ts}{Bootstrapping mode : NULL for iid observations, "nonoverlapping" is default, "moving" for moving blocks, "circular" for circular blocks, "stationary" for stationary blocks, and "seasonal" for seasonal blocks.}
+\item{bootstrap.ts}{Bootstrapping mode : NULL for iid observations, "ar.sieve" for AR-Sieve bootstrap ,"nonoverlapping" is default, "moving" for moving blocks, "circular" for circular blocks, "stationary" for stationary blocks, and "seasonal" for seasonal blocks.}
 
 \item{by.end}{Logical. Build block by the end of time series or not. Default = TRUE.}
 
