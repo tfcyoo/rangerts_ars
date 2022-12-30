@@ -27,14 +27,10 @@ class DataFloat: public Data {
 public:
   DataFloat() = default;
 
-  //DataFloat(const DataFloat&) = delete;
-  //DataFloat& operator=(const DataFloat&) = delete;
+  DataFloat(const DataFloat&) = delete;
+  DataFloat& operator=(const DataFloat&) = delete;
 
   virtual ~DataFloat() override = default;
-
-  virtual std::unique_ptr<Data> clone() const override{
-    return  make_unique<DataFloat>(*this);
-  }
 
   double get_x(size_t row, size_t col) const override {
     // Use permuted data for corrected impurity importance

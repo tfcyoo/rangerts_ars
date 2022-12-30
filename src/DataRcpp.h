@@ -39,24 +39,22 @@ namespace rangertsARS {
 class DataRcpp: public Data {
 public:
   DataRcpp() = default;
-  DataRcpp(Rcpp::NumericMatrix x, Rcpp::NumericMatrix y, std::vector<std::string> variable_names, size_t num_rows, size_t num_cols) {
+  DataRcpp(Rcpp::NumericMatrix x_ar_sieve, Rcpp::NumericMatrix x, Rcpp::NumericMatrix y, std::vector<std::string> variable_names, size_t num_rows, size_t num_cols) {
       this->x = x;
+      this->x_ar_sieve = x_ar_sieve;
       this->y = y;
       this->variable_names = variable_names;
       this->num_rows = num_rows;
       this->num_cols = num_cols;
       this->num_cols_no_snp = num_cols;
+      this->ar_order = x_ar_sieve.ncol();
     }
 
-  //DataRcpp(const DataRcpp&) = delete;
+  DataRcpp(const DataRcpp&) = delete;
 
-  //DataRcpp& operator=(const DataRcpp&) = delete;
+  DataRcpp& operator=(const DataRcpp&) = delete;
 
   virtual ~DataRcpp() override = default;
-
-  virtual std::unique_ptr<Data> clone() const override{
-    return make_unique<DataRcpp>(*this);
-  }
 
   double get_x(size_t row, size_t col) const override{
     // Use permuted data for corrected impurity importance
@@ -67,7 +65,15 @@ public:
     }
 
     if (col < num_cols_no_snp) {
-      return x(row, col);
+      
+      if(ar_order > 0){
+        if(col >= ar_order)
+          return x(row, col-ar_order);
+        else
+          return x_ar_sieve(row, col);
+      }
+      else
+        return x(row, col);
     } else {
       return getSnp(row, col, col_permuted);
     }
@@ -75,14 +81,6 @@ public:
 
   double get_y(size_t row, size_t col) const override {
     return y(row, col);
-  }
-
-  void set_Y(Rcpp::NumericMatrix Y){
-    this->y = Y;
-  }
-
-  void set_X(Rcpp::NumericMatrix X){
-    this->x = X;
   }
 
   void setNumCols(size_t num_cols){
@@ -104,7 +102,15 @@ public:
   }
 
   void set_x(size_t col, size_t row, double value, bool& error)  override{
-    x(row, col) = value;
+    
+    if(ar_order > 0){
+      if(col >= ar_order)
+         x(row, col-ar_order) = value;
+      else
+         x_ar_sieve(row, col) = value;
+    }
+    else
+      x(row, col) = value;
   }
 
   void set_y(size_t col, size_t row, double value, bool& error) override {
@@ -115,6 +121,8 @@ public:
 private:
   Rcpp::NumericMatrix x;
   Rcpp::NumericMatrix y;
+  Rcpp::NumericMatrix x_ar_sieve;
+  size_t ar_order;
 };
 
 } // namespace rangerts_modified

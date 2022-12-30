@@ -212,18 +212,71 @@ rangerts <- function(formula = NULL, data = NULL, num.trees = 500, mtry = NULL,
                    dependent.variable.name = NULL, status.variable.name = NULL,
                    classification = NULL, x = NULL, y = NULL,
                    bootstrap.ts = NULL, by.end = TRUE,
-                   block.size = 10, period = 1, ar_errors = NULL, ar_coefs = NULL) {
+                   block.size = 10, period = 1) {
 
   ## By default not in GWAS mode
   snp.data <- as.matrix(0)
   gwa.mode <- FALSE
 
+  
+  ar_order = 0
+  
   if (is.null(data)) {
     ## x/y interface
-    if (is.null(x) | is.null(y)) {
+    
+    if (is.null(x) && is.null(y)) {
       stop("Error: Either data or x and y is required.")
     }
-  }  else {
+    
+    
+    if(!is.null(y)){
+      
+      ar_fit <- ar_model(y)
+      ar_data <- getTrainingData(y, ar_fit$order)
+      x_ar_sieve = ar_data[, -1, drop = FALSE]
+      
+      if(!is.null(bootstrap.ts) && bootstrap.ts == "ar.sieve"){
+        
+        
+        ar_errors = ar_fit$errors
+        ar_coefs = ar_fit$coefs
+        ar_order = ar_fit$order
+        
+        if(is.null(x)){
+          x <- ar_data[, -1, drop = FALSE]
+        }else{
+          
+          matr = matrix(mean(y), nrow = ar_order, ncol = ar_order + 1)
+          
+          if(ar_order > 1){
+            for(i in 1:(ar_order-1)){
+              matr[(i+1):ar_order, i] = y[1:(ar_order-i)]
+            }
+          }
+          
+          x_ar_sieve = rbind(as.data.frame(matr)[,-1], x_ar_sieve)
+          
+          x <- cbind(x_ar_sieve, x)
+          rm(matr)
+        }
+        
+        rm(ar_data)
+        
+      }else{
+        if(is.null(x))
+          x <- x_ar_sieve
+        else
+          x <- cbind(x_ar_sieve, x)
+        
+        y <- y
+        
+        rm(x_ar_sieve)
+      }
+      
+    }else{
+        stop("Error: Either data or x and y is required.")
+      }
+    } else {
     ## GenABEL GWA data
     if (inherits(data, "gwaa.data" )) {
       snp.names <- data@gtdata@snpnames
@@ -239,9 +292,12 @@ rangerts <- function(formula = NULL, data = NULL, num.trees = 500, mtry = NULL,
     ## Formula interface. Use whole data frame if no formula provided and depvarname given
     if (is.null(formula)) {
       if (is.null(dependent.variable.name)) {
-        if (is.null(y) | is.null(x)) {
-          stop("Error: Please give formula, dependent variable name or x/y.")
+        
+        if(is.null(x)){
+          if(is.null(y) || bootstrap.ts != "ar.sieve")
+            stop("Error: Please give formula, dependent variable name or x/y.")
         }
+      
       } else {
         if (is.null(status.variable.name)) {
           y <- data[, dependent.variable.name, drop = TRUE]
@@ -260,8 +316,37 @@ rangerts <- function(formula = NULL, data = NULL, num.trees = 500, mtry = NULL,
       y <- data.selected[, 1]
       x <- data.selected[, -1, drop = FALSE]
     }
+    
+    
+    if(!is.null(bootstrap.ts) && bootstrap.ts == "ar.sieve"){
+      ar_fit <- ar_model(y)
+      x_ar_sieve <- getTrainingData(y, ar_fit$order)[,-1, drop = T]
+      ar_order = ar_fit$order
+      
+      if(length(x) == 0)
+        x <- x_ar_sieve
+      else{
+        
+        matr = matrix(mean(y), nrow = ar_order, ncol = ar_order + 1)
+        
+        if(ar_order > 1){
+          for(i in 1:(ar_order-1)){
+            matr[(i+1):ar_order, i] = y[1:(ar_order-i)]
+          }
+        }
+        
+        x_ar_sieve = rbind(as.data.frame(matr)[,-1], x_ar_sieve)
+        
+        x <- cbind(x_ar_sieve, x)
+        
+        rm(x_ar_sieve, matr)
+      }
+        
+      ar_errors = ar_fit$errors
+      ar_coefs = ar_fit$coefs
+      
+    }
   }
-
   ## Sparse matrix data
   if (inherits(x, "Matrix")) {
     if (!inherits(x, "dgCMatrix")) {
@@ -638,7 +723,7 @@ rangerts <- function(formula = NULL, data = NULL, num.trees = 500, mtry = NULL,
     stop("Error: Invalid split select weights.")
   }
 
-  ## Always split variables: NULL for no variables
+  # ## Always split variables: NULL for no variables
   if (is.null(always.split.variables)) {
     always.split.variables <- c("0", "0")
     use.always.split.variables <- FALSE
@@ -841,7 +926,20 @@ rangerts <- function(formula = NULL, data = NULL, num.trees = 500, mtry = NULL,
     sparse.x <- Matrix(matrix(c(0, 0)))
     use.sparse.data <- FALSE
     if (is.data.frame(x)) {
+      ##added
+      if(ar_order > 0){
+        x_ar_sieve = x[,1:ar_order, drop = FALSE]
+        
+        if(ncol(x) > ar_order)
+          x = x[,(ar_order+1):ncol(x)]
+      }else{
+        x_ar_sieve = data.frame()
+      }
+        
       x <- data.matrix(x)
+      x_ar_sieve <- data.matrix(x_ar_sieve)
+      #always.split.variables = colnames(x_ar_sieve)
+      
     }
   }
 
@@ -864,8 +962,21 @@ rangerts <- function(formula = NULL, data = NULL, num.trees = 500, mtry = NULL,
     }
   }
   
+  
+  ## Always split variables: NULL for no variables
+  # if (is.null(always.split.variables)) {
+  #   always.split.variables <- c("0", "0")
+  #   use.always.split.variables <- FALSE
+  # } else {
+  #   use.always.split.variables <- TRUE
+  # }
+  # 
+  # if (use.split.select.weights && use.always.split.variables) {
+  #   stop("Error: Please use only one option of split.select.weights and always.split.variables.")
+  # }
+  
   ## Call rangerts
-  result <- rangertsCpp(treetype, x, y.mat, independent.variable.names, mtry,
+  result <- rangertsCpp(treetype, x_ar_sieve, x, y.mat, independent.variable.names, mtry,
                       num.trees, verbose, seed, num.threads, write.forest, importance.mode,
                       min.node.size, split.select.weights, use.split.select.weights,
                       always.split.variables, use.always.split.variables,
@@ -1028,3 +1139,5 @@ rangerts <- function(formula = NULL, data = NULL, num.trees = 500, mtry = NULL,
 
   return(result)
 }
+
+

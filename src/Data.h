@@ -28,15 +28,13 @@ class Data {
 public:
   Data();
 
-  //Data(const Data&) = delete;
-  //Data& operator=(const Data&) = delete;
+  Data(const Data&) = delete;
+  Data& operator=(const Data&) = delete;
 
   virtual ~Data() = default;
-  virtual std::unique_ptr<Data> clone() const = 0;
   virtual double get_x(size_t row, size_t col) const = 0;
   virtual double get_y(size_t row, size_t col) const = 0;
-  //virtual std::vector<double> get_Y() = 0;
-
+ 
   size_t getVariableID(const std::string& variable_name) const;
 
   virtual void reserveMemory(size_t y_cols) = 0;

@@ -43,14 +43,10 @@ public:
   DataSparse(Eigen::SparseMatrix<double>& x, Rcpp::NumericMatrix& y, std::vector<std::string> variable_names, size_t num_rows,
       size_t num_cols);
 
-  //DataSparse(const DataSparse&) = delete;
-  //DataSparse& operator=(const DataSparse&) = delete;
+  DataSparse(const DataSparse&) = delete;
+  DataSparse& operator=(const DataSparse&) = delete;
 
   virtual ~DataSparse() override = default;
-
-  virtual std::unique_ptr<Data> clone() const override{
-    return make_unique<DataSparse>(*this);
-  }
 
   double get_x(size_t row, size_t col) const override {
     // Use permuted data for corrected impurity importance

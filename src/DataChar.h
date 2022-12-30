@@ -27,14 +27,10 @@ class DataChar: public Data {
 public:
   DataChar() = default;
 
-  //DataChar(const DataChar&) = delete;
-  //DataChar& operator=(const DataChar&) = delete;
+  DataChar(const DataChar&) = delete;
+  DataChar& operator=(const DataChar&) = delete;
 
   virtual ~DataChar() override = default;
-
-  virtual std::unique_ptr<Data> clone() const override{
-    return make_unique<DataChar>(*this);
-  }
 
   double get_x(size_t row, size_t col) const override {
     // Use permuted data for corrected impurity importance

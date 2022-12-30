@@ -27,14 +27,10 @@ class DataDouble: public Data {
 public:
   DataDouble() = default;
 
-  //DataDouble(const DataDouble&) = delete;
-  //DataDouble& operator=(const DataDouble&) = delete;
+  DataDouble(const DataDouble&) = delete;
+  DataDouble& operator=(const DataDouble&) = delete;
 
   virtual ~DataDouble() override = default;
-
-  virtual std::unique_ptr<Data> clone() const override{
-    return make_unique<DataDouble>(*this);
-  }
 
   double get_x(size_t row, size_t col) const override {
     // Use permuted data for corrected impurity importance

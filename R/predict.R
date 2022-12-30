@@ -124,9 +124,31 @@ predict.rangerts.forest <- function(object, data, predict.all = FALSE,
   if (type == "se") {
     predict.all <- TRUE
   }
-
+  
+  
   x <- data
-
+  x_ar_sieve = data.frame()
+  if(!is.null(forest$bootstrap.ts) && forest$bootstrap.ts == 7){
+    input_y = as.numeric(forest$y)
+    #input_x = forest$x
+    
+    ar_order = forest$ar_order
+    
+    T = length(input_y)
+    lag_observations = getTestData(input_y, ar_order)
+    
+    if(length(x) == 0){
+      x <- lag_observations
+      x_ar_sieve = data.frame()
+    }
+    else{
+      x_ar_sieve <- lag_observations
+    }
+      
+    
+  }
+  
+  
   if (sum(!(forest$independent.variable.names %in% colnames(x))) > 0) {
     stop("Error: One or more independent variables not found in data.")
   }
@@ -170,7 +192,7 @@ predict.rangerts.forest <- function(object, data, predict.all = FALSE,
     stop("Missing data in columns: ",
          paste0(offending_columns, collapse = ", "), ".", call. = FALSE)
   }
-
+  
   ## Num threads
   ## Default 0 -> detect from system in C++.
   if (is.null(num.threads)) {
@@ -246,10 +268,11 @@ predict.rangerts.forest <- function(object, data, predict.all = FALSE,
     sparse.x <- Matrix(matrix(c(0, 0)))
     use.sparse.data <- FALSE
     x <- data.matrix(x)
+    x_ar_sieve <- data.matrix(x_ar_sieve)
   }
 
   ## Call rangerts
-  result <- rangertsCpp(treetype, x, y, forest$independent.variable.names, mtry,
+  result <- rangertsCpp(treetype, x_ar_sieve, x, y, forest$independent.variable.names, mtry,
                       num.trees, verbose, seed, num.threads, write.forest, importance,
                       min.node.size, split.select.weights, use.split.select.weights,
                       always.split.variables, use.always.split.variables,
@@ -536,7 +559,7 @@ predict.rangerts <- function(object, data = NULL, predict.all = FALSE,
     result
   } else {
     ## Non-quantile prediction
-    if (is.null(data)) {
+    if (is.null(data) && forest$bootstrap.ts != 7) {
      stop("Error: Argument 'data' is required for non-quantile prediction.")
     }
     predict(forest, data, predict.all, num.trees, type, se.method, seed, num.threads, verbose, object$inbag.counts, ...)

@@ -48,7 +48,7 @@ using namespace rangertsARS;
 
 // [[Rcpp::depends(RcppEigen)]]
 // [[Rcpp::export]]
-Rcpp::List rangertsCpp(uint treetype, Rcpp::NumericMatrix input_x, Rcpp::NumericMatrix input_y,
+Rcpp::List rangertsCpp(uint treetype, Rcpp::NumericMatrix input_x_ar_sieve, Rcpp::NumericMatrix input_x, Rcpp::NumericMatrix input_y,
     std::vector<std::string> variable_names, uint mtry, uint num_trees, bool verbose, uint seed, uint num_threads,
     bool write_forest, uint importance_mode_r, uint min_node_size,
     std::vector<std::vector<double>>& split_select_weights, bool use_split_select_weights,
@@ -104,14 +104,14 @@ Rcpp::List rangertsCpp(uint treetype, Rcpp::NumericMatrix input_x, Rcpp::Numeric
       num_cols = sparse_x.cols();
     } else {
       num_rows = input_x.nrow();
-      num_cols = input_x.ncol();
+      num_cols = input_x.ncol() + input_x_ar_sieve.ncol();
     }
 
     // Initialize data
     if (use_sparse_data) {
      data = make_unique<DataSparse>(sparse_x, input_y, variable_names, num_rows, num_cols);
     } else {
-      data = make_unique<DataRcpp>(input_x, input_y, variable_names, num_rows, num_cols);
+      data = make_unique<DataRcpp>(input_x_ar_sieve, input_x, input_y, variable_names, num_rows, num_cols);
     }
 
     // If there is snp data, add it
@@ -148,6 +148,7 @@ Rcpp::List rangertsCpp(uint treetype, Rcpp::NumericMatrix input_x, Rcpp::Numeric
     SplitRule splitrule = (SplitRule) splitrule_r;
     PredictionType prediction_type = (PredictionType) prediction_type_r;
     BootstrapTS bootstrap_ts = (BootstrapTS) bootstrap_ts_r;
+    //int bootstrap_ts_int = bootstrap_ts;
 
     // Init rangerts
     forest->initR(std::move(data), mtry, num_trees, verbose_out, seed, num_threads,
@@ -155,7 +156,7 @@ Rcpp::List rangertsCpp(uint treetype, Rcpp::NumericMatrix input_x, Rcpp::Numeric
         prediction_mode, sample_with_replacement, unordered_variable_names, save_memory, splitrule, case_weights,
         inbag, predict_all, keep_inbag, sample_fraction, alpha, minprop, holdout, prediction_type, num_random_splits,
         order_snps, max_depth, regularization_factor, regularization_usedepth, bootstrap_ts, by_end, block_size, period,
-        errors, coefs, input_x, input_y);
+        errors, coefs, input_x_ar_sieve, input_x, input_y);
 
     // Load forest object if in prediction mode
     if (prediction_mode) {
@@ -226,6 +227,10 @@ Rcpp::List rangertsCpp(uint treetype, Rcpp::NumericMatrix input_x, Rcpp::Numeric
     // Return output
     result.push_back(forest->getNumTrees(), "num.trees");
     result.push_back(forest->getNumIndependentVariables(), "num.independent.variables");
+    result.push_back(input_y, "y");
+    result.push_back(int(bootstrap_ts), "bootstrap.ts");
+    result.push_back(coefs.size()-1, "ar_order");
+    
     if (treetype == TREE_SURVIVAL) {
       auto& temp = dynamic_cast<ForestSurvival&>(*forest);
       result.push_back(temp.getUniqueTimepoints(), "unique.death.times");
@@ -254,7 +259,11 @@ Rcpp::List rangertsCpp(uint treetype, Rcpp::NumericMatrix input_x, Rcpp::Numeric
       forest_object.push_back(forest->getSplitVarIDs(), "split.varIDs");
       forest_object.push_back(forest->getSplitValues(), "split.values");
       forest_object.push_back(forest->getIsOrderedVariable(), "is.ordered");
-
+      forest_object.push_back(input_y, "y");
+      forest_object.push_back(int(bootstrap_ts), "bootstrap.ts");
+      forest_object.push_back(coefs.size()-1, "ar_order");
+      
+      
       if (snp_data.nrow() > 1 && order_snps) {
         // Exclude permuted SNPs (if any)
         std::vector<std::vector<size_t>> snp_order = forest->getSnpOrder();

@@ -83,6 +83,10 @@ public:
   const std::vector<size_t>& getInbagCounts() const {
     return inbag_counts;
   }
+  
+  /*void setData(Data* data){
+    this->data = data;
+  }*/
 
 protected:
   void createPossibleSplitVarSubset(std::vector<size_t>& result);

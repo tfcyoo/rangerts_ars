@@ -52,7 +52,7 @@ void Forest::initCpp(std::string dependent_variable_name, MemoryMode memory_mode
     PredictionType prediction_type, uint num_random_splits, uint max_depth, const std::vector<double>& regularization_factor,
     bool regularization_usedepth, BootstrapTS bootstrap_ts, bool by_end,
     uint block_size, uint period, std::vector<double>& errors,
-    std::vector<double>& coefs, Rcpp::NumericMatrix input_x, Rcpp::NumericMatrix input_y) {
+    std::vector<double>& coefs, Rcpp::NumericMatrix input_x_ar_sieve, Rcpp::NumericMatrix input_x, Rcpp::NumericMatrix input_y) {
 
   this->verbose_out = verbose_out;
 
@@ -89,7 +89,7 @@ void Forest::initCpp(std::string dependent_variable_name, MemoryMode memory_mode
       min_node_size, prediction_mode, sample_with_replacement, unordered_variable_names, memory_saving_splitting,
       splitrule, predict_all, sample_fraction_vector, alpha, minprop, holdout, prediction_type, num_random_splits,
       false, max_depth, regularization_factor, regularization_usedepth, bootstrap_ts, by_end, block_size, period,
-      errors, coefs, input_x, input_y);
+      errors, coefs, input_x_ar_sieve, input_x, input_y);
 
   if (prediction_mode) {
     loadFromFile(load_forest_filename);
@@ -149,7 +149,7 @@ void Forest::initR(std::unique_ptr<Data> input_data, uint mtry, uint num_trees, 
     std::vector<double>& sample_fraction, double alpha, double minprop, bool holdout, PredictionType prediction_type,
     uint num_random_splits, bool order_snps, uint max_depth, const std::vector<double>& regularization_factor, bool regularization_usedepth,
     BootstrapTS bootstrap_ts, bool by_end, uint block_size, uint period, std::vector<double>& errors,
-    std::vector<double>& coefs, Rcpp::NumericMatrix input_x, Rcpp::NumericMatrix input_y) {
+    std::vector<double>& coefs, Rcpp::NumericMatrix input_x_ar_sieve, Rcpp::NumericMatrix input_x, Rcpp::NumericMatrix input_y) {
 
   this->verbose_out = verbose_out;
 
@@ -157,7 +157,7 @@ void Forest::initR(std::unique_ptr<Data> input_data, uint mtry, uint num_trees, 
   init(MEM_DOUBLE, std::move(input_data), mtry, "", num_trees, seed, num_threads, importance_mode, min_node_size,
       prediction_mode, sample_with_replacement, unordered_variable_names, memory_saving_splitting, splitrule,
       predict_all, sample_fraction, alpha, minprop, holdout, prediction_type, num_random_splits, order_snps, max_depth,
-      regularization_factor, regularization_usedepth, bootstrap_ts, by_end, block_size, period, errors, coefs, input_x, input_y);
+      regularization_factor, regularization_usedepth, bootstrap_ts, by_end, block_size, period, errors, coefs, input_x_ar_sieve ,input_x, input_y);
 
   // Set variables to be always considered for splitting
   if (!always_split_variable_names.empty()) {
@@ -193,9 +193,10 @@ void Forest::init(MemoryMode memory_mode, std::unique_ptr<Data> input_data, uint
     double alpha, double minprop, bool holdout, PredictionType prediction_type, uint num_random_splits, bool order_snps,
     uint max_depth, const std::vector<double>& regularization_factor, bool regularization_usedepth,
     BootstrapTS bootstrap_ts, bool by_end, uint block_size, uint period, std::vector<double>& errors,
-    std::vector<double>& coefs, Rcpp::NumericMatrix input_x, Rcpp::NumericMatrix input_y) {
+    std::vector<double>& coefs, Rcpp::NumericMatrix input_x_ar_sieve, Rcpp::NumericMatrix input_x, Rcpp::NumericMatrix input_y) {
 
   this->input_x = input_x;
+  this->input_x_ar_sieve = input_x_ar_sieve;
   this->input_y = input_y;
 
   // Initialize data with memmode
@@ -504,8 +505,11 @@ void Forest::grow() {
                                   bootstrap_ts, by_end, block_size, period, &split_varIDs_used, errors, coefs);
     }else{
       
-      std::unique_ptr<Data> ar_boot_data = make_unique<DataRcpp>(Rcpp::clone(this->input_x), Rcpp::clone(this->input_y), data->getVariableNames(),
-                                                                 data->getNumRows(), data->getNumCols());
+      std::unique_ptr<Data> ar_boot_data;
+      
+        ar_boot_data = make_unique<DataRcpp>(Rcpp::clone(input_x_ar_sieve),input_x, Rcpp::clone(input_y), data->getVariableNames(),
+                                                                   data->getNumRows(), data->getNumCols());
+      
       
       if(!this->prediction_mode)
         ar_boot_data->setIsOrderedVariable( data->getIsOrderedVariable());
